@@ -1,0 +1,94 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Map Large File Browser Project</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <main class="page-container">
+        <header class="page-header">
+            <div>
+                <h1>MapLarge File Browser</h1>
+                <p>Browse and manage files stored on the server</p>
+            </div>
+        </header>
+
+        <section class="browser-card">
+            <div class="toolbar">
+
+                <form id="search-form" class="search-form" role="search">
+                    <input id="search-input"
+                           type="search"
+                           placeholder="Search files and folders"
+                           autocomplete="off">
+                    <button type="submit">Search</button>
+                    <button id="clear-search" type="button">Clear</button>
+                </form>
+
+                <form id="upload-form"
+                      class="upload-form"
+                      enctype="multipart/form-data">
+                    <input id="upload-input"
+                           name="file"
+                           type="file"
+                           required>
+                    <button id="upload-button" type="submit">
+                        Upload
+                    </button>
+                </form>
+
+                <nav id="breadcrumbs" class="breadcrumbs" aria-label="Current folder" />
+
+                <div class="search-container">
+                    <label for="search-input">Search</label>
+
+                    <input id="search-input"
+                           type="search"
+                           placeholder="Search files and folders">
+
+                    <button type="button" class="secondary-button">
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <section class="summary">
+                <div class="summary-item">
+                    <strong id="folder-count">0</strong>
+                    <span>Folders</span>
+                </div>
+
+                <div class="summary-item">
+                    <strong id="file-count">0</strong>
+                    <span>Files</span>
+                </div>
+
+                <div class="summary-item">
+                    <strong id="total-size">0 B</strong>
+                    <span>Total file size</span>
+                </div>
+            </section>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Last Modified</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="file-list" />                       
+                </table>
+            </div>
+
+            <p id="status-message" class="status-message" role="status" aria-live="polite" />
+        </section>
+    </main>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
