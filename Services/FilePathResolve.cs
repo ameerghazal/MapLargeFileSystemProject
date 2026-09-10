@@ -51,7 +51,7 @@ public sealed class FilePathResolve
         var isRoot = string.Equals(fullPath, _rootPath, _pathComparison);
 
         var isInsideRoot = fullPath.StartsWith(
-            _rootPath + Path.DirectorySeparatorChar,
+            _rootPrefix,
             _pathComparison
             );
 

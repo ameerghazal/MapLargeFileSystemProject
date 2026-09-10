@@ -113,6 +113,7 @@ function createNavigationButton(label: string, path: string, className?: string)
 }
 function renderItems(items: FileSystemItem[], isSearch: boolean): void {
     fileList.setAttribute("aria-busy", "false");
+    fileList.replaceChildren();
 
     if (items.length === 0) {
         fileList.replaceChildren(createMessageRow(isSearch ? "No matching files or folders" : "This directory is empty."));
@@ -162,8 +163,6 @@ function renderSummary(summary: ViewSummary): void {
     totalSize.textContent = formatBytes(summary.totalFileSize);
 }
 function createActionCell(item: FileSystemItem): HTMLTableCellElement {
-    // This function is probably where I'd implement delete, copy, move functionalities.
-
     const cell = document.createElement("td");
 
     if (item.isDirectory) {
@@ -179,6 +178,23 @@ function createActionCell(item: FileSystemItem): HTMLTableCellElement {
     link.textContent = "Download";
     link.setAttribute("aria-label", `Download ${item.name}`);
 
-    cell.append(link);
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-button";
+    deleteButton.textContent = "X";
+    deleteButton.setAttribute('aria-label', `Delete ${item.name}`);
+
+    deleteButton.addEventListener("click", () => {
+        window.dispatchEvent(
+            new CustomEvent("delete-file", {
+                detail: {
+                    path: item.path,
+                    name: item.name
+                }
+            })
+        )
+    });
+
+    cell.append(link, deleteButton);
     return cell;
 }

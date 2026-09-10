@@ -12,4 +12,5 @@ public interface IFileSystemService
         string fileName, 
         Stream content
     );
+    void Delete(string path);
 }

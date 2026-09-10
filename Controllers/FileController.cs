@@ -127,7 +127,7 @@ public class FileController : ControllerBase
 
         if (file.Length > _options.Value.MaximumUploadSizeInBytes)
         {
-            return BadRequest(new { error = $"File size exceeds the maximum limit of {_options.Value.MaximumUploadSizeInBytes / (1024 * 1024)} MB." });
+            return BadRequest(new { error = $"File size exceeds the maximum limit of {_options.Value.MaximumUploadSizeInBytes / (1000 * 1000)} MB." });
         }
 
         try
@@ -153,6 +153,52 @@ public class FileController : ControllerBase
         {
             _logger.LogError(exception, "Failed to upload file to path {Path}.", path);
             return StatusCode(500, new { error = "The file could not be uploaded." });
+        }
+    }
+
+    [HttpDelete("Delete")]
+    public IActionResult Delete([FromQuery] string path)
+    {
+        try
+        {
+            _fileSystemService.Delete(path);
+            return NoContent();
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return StatusCode(403, new { error = exception.Message });
+        }
+        catch (ArgumentException exception)
+        {
+            return BadRequest(new { error = exception.Message });
+        }
+        catch (FileNotFoundException exception)
+        {
+            return NotFound(new { error = exception.Message });
+        }
+        catch (IOException exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Could not delete file at path {Path}.",
+                path);
+
+            return Conflict(new
+            {
+                error = "The file could not be deleted. It may be in use."
+            });
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(
+                exception,
+                "Failed to delete file at path {Path}.",
+                path);
+
+            return StatusCode(500, new
+            {
+                error = "The file could not be deleted."
+            });
         }
     }
 }

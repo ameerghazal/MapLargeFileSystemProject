@@ -3,8 +3,17 @@ async function apiRequest(url, options) {
     headers.set("Accept", "application/json");
     const response = await fetch(url, { ...options, headers });
     if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        let message = `API request failed with status ${response.status}.`;
+        try {
+            const body = await response.json();
+            if (typeof body?.error === "string")
+                message = body.error;
+        }
+        catch { }
+        throw new Error(message);
     }
+    if (response.status === 204)
+        return undefined;
     return await response.json();
 }
 export function browseDirectory(path) {
@@ -23,6 +32,10 @@ export function uploadFile(path, file) {
         method: "POST",
         body: formData
     });
+}
+export function deleteFile(path) {
+    const param = new URLSearchParams({ path });
+    return apiRequest(`/api/files/delete?${param}`, { method: "DELETE" });
 }
 export function getSettings() {
     return apiRequest("/api/files/settings");

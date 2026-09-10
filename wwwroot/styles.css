@@ -236,6 +236,33 @@ tbody tr:hover {
     white-space: nowrap;
 }
 
+.delete-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-left: 0.5rem;
+    padding: 0;
+    border: none;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #b42318;
+    font-size: 1.5rem;
+    line-height: 1;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.delete-button:hover {
+    background: #fee4e2;
+}
+
+.delete-button:focus-visible {
+    outline: 2px solid #b42318;
+    outline-offset: 2px;
+}
+
 @media (max-width: 800px) {
     .toolbar {
         grid-template-columns: minmax(0, 1fr);

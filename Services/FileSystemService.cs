@@ -149,6 +149,21 @@ public sealed class FileSystemService(
         
         return ToFileSystemItem(new FileInfo(destinationPath));
     }
+    public void Delete(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            throw new ArgumentException("A file path is required.", nameof(path));
+
+        var fullPath = paths.ResolvePath(path);
+
+        if (Directory.Exists(fullPath))
+            throw new ArgumentException("Only files can be deleted.", nameof(path));
+
+        if (!File.Exists(fullPath))
+            throw new FileNotFoundException("The file does not exist.");
+
+        File.Delete(fullPath);
+    }
     private DirectoryInfo GetDirectory(string? path)
     {
         var fullPath = paths.ResolvePath(path);

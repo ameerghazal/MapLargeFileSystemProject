@@ -7,6 +7,8 @@ function getElement(selector) {
     }
     return element;
 }
+// Future: Could automate this part, just loop over and grab all the ID's, and then hold map of name : querySelector.
+// Probably cleaner, but for the sake of this project, and front-end not being a huge prioirty, decided to take the easy way out.
 const fileList = getElement("#file-list");
 const folderCount = getElement("#folder-count");
 const fileCount = getElement("#file-count");
@@ -91,6 +93,7 @@ function createNavigationButton(label, path, className) {
 }
 function renderItems(items, isSearch) {
     fileList.setAttribute("aria-busy", "false");
+    fileList.replaceChildren();
     if (items.length === 0) {
         fileList.replaceChildren(createMessageRow(isSearch ? "No matching files or folders" : "This directory is empty."));
         return;
@@ -124,7 +127,6 @@ function renderSummary(summary) {
     totalSize.textContent = formatBytes(summary.totalFileSize);
 }
 function createActionCell(item) {
-    // This function is probably where I'd implement delete, copy, move functionalities.
     const cell = document.createElement("td");
     if (item.isDirectory) {
         cell.textContent = "-";
@@ -136,6 +138,19 @@ function createActionCell(item) {
     link.className = "download-link";
     link.textContent = "Download";
     link.setAttribute("aria-label", `Download ${item.name}`);
-    cell.append(link);
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "delete-button";
+    deleteButton.textContent = "X";
+    deleteButton.setAttribute('aria-label', `Delete ${item.name}`);
+    deleteButton.addEventListener("click", () => {
+        window.dispatchEvent(new CustomEvent("delete-file", {
+            detail: {
+                path: item.path,
+                name: item.name
+            }
+        }));
+    });
+    cell.append(link, deleteButton);
     return cell;
 }

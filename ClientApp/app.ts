@@ -7,6 +7,7 @@ import { navigate } from "./navigation.js";
 
 let settings: FileBrowserSettings | null = null;
 let uploading: boolean = false
+let deleting: boolean = false;
 function getState(): { path: string; query: string } {
     const parameters = new URL(window.location.href).searchParams;
     return {
@@ -47,11 +48,34 @@ async function uploadFile(path: string, file: File): Promise<void> {
 
         navigate(path, "", true);
     } catch (error: unknown) {
-        uploadStatus.textContent = `The upload failed. ${error instanceof Error ? error.message : ""}.`
-
+        window.alert(
+            error instanceof Error ? error.message : "The upload failed."
+        );
     } finally {
         uploading = false;
+        uploadInput.value = "";
         updateUploadControls();
+    }
+}
+
+async function deleteFile(path: string, name: string): Promise<void> {
+    if (deleting) return;
+
+    const windowConformation = window.confirm(`Would you like to delete ${name}? \n This will permanently delete the file.`)
+
+    if (!windowConformation) return;
+
+    deleting = true;
+
+    try {
+        await api.deleteFile(path);
+        await loadCurrentState();
+    } catch (error: unknown) {
+        window.alert(
+            error instanceof Error ? error.message : "The file could not be deleted."
+        );
+    } finally {
+        deleting = false;
     }
 }
 
@@ -74,6 +98,17 @@ function updateUploadControls(): void {
 
 window.addEventListener("navigation", () => {
     void loadCurrentState();
+})
+
+window.addEventListener("delete-file", event => {
+    if (!(event instanceof CustomEvent)) return;
+
+    const detail = event.detail;
+
+    if (typeof detail?.path !== "string" || typeof detail?.name !== "string")
+        return;
+
+    void deleteFile(detail.path, detail.name);
 })
 
 window.addEventListener("popstate", () => {
@@ -121,6 +156,7 @@ uploadForm.addEventListener("submit", event => {
 
     if (file.size > settings.maximumUploadSizeInBytes) {
         uploadStatus.textContent = `The selected file exceeds the maximum upload size of ${formatBytes(settings.maximumUploadSizeInBytes)}.`;
+        uploadInput.value = ""
         return;
     }
 
