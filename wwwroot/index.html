@@ -1,69 +1,48 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>Map Large File Browser Project</title>
-    <link rel="stylesheet" href="styles.css" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MapLarge File Browser</title>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
     <main class="page-container">
         <header class="page-header">
-            <div>
-                <h1>MapLarge File Browser</h1>
-                <p>Browse and manage files stored on the server</p>
-            </div>
+            <h1>MapLarge File Browser</h1>
+            <p>Browse and manage files stored on the server</p>
         </header>
 
-        <section class="browser-card">
+        <section class="browser-card" aria-label="File browser">
             <div class="toolbar">
-
                 <form id="search-form" class="search-form" role="search">
-                    <input id="search-input"
-                           type="search"
-                           placeholder="Search files and folders"
-                           autocomplete="off">
-                    <button type="submit">Search</button>
-                    <button id="clear-search" type="button">Clear</button>
+                    <label for="search-input" class="visually-hidden">Search files and folders</label>
+                    <input id="search-input" type="search"
+                           placeholder="Search files and folders" autocomplete="off">
+                    <button type="submit" class="primary-button">Search</button>
+                    <button id="clear-search" type="button" class="secondary-button">Clear</button>
                 </form>
 
-                <form id="upload-form"
-                      class="upload-form"
-                      enctype="multipart/form-data">
-                    <input id="upload-input"
-                           name="file"
-                           type="file"
-                           required>
-                    <button id="upload-button" type="submit">
-                        Upload
-                    </button>
+                <form id="upload-form" class="upload-form" enctype="multipart/form-data">
+                    <label for="upload-input" class="visually-hidden">File to upload</label>
+                    <input id="upload-input" name="file" type="file"
+                           aria-describedby="upload-limit" required disabled>
+                    <button id="upload-button" type="submit" class="primary-button" disabled>Upload</button>
                 </form>
-
-                <nav id="breadcrumbs" class="breadcrumbs" aria-label="Current folder" />
-
-                <div class="search-container">
-                    <label for="search-input">Search</label>
-
-                    <input id="search-input"
-                           type="search"
-                           placeholder="Search files and folders">
-
-                    <button type="button" class="secondary-button">
-                        Search
-                    </button>
-                </div>
+                <small id="upload-limit" class="upload-limit">Loading upload limit…</small>
+                <p id="upload-status" class="upload-status" role="status" aria-live="polite"></p>
+                <nav id="breadcrumbs" class="breadcrumbs" aria-label="Current folder"></nav>
             </div>
 
-            <section class="summary">
+            <section class="summary" aria-label="Current view totals">
                 <div class="summary-item">
                     <strong id="folder-count">0</strong>
                     <span>Folders</span>
                 </div>
-
                 <div class="summary-item">
                     <strong id="file-count">0</strong>
                     <span>Files</span>
                 </div>
-
                 <div class="summary-item">
                     <strong id="total-size">0 B</strong>
                     <span>Total file size</span>
@@ -72,23 +51,23 @@
 
             <div class="table-container">
                 <table>
+                    <caption class="visually-hidden">Files and folders in the current view</caption>
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th>Size</th>
-                            <th>Last Modified</th>
-                            <th>Action</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Type</th>
+                            <th scope="col">Size</th>
+                            <th scope="col">Last modified</th>
+                            <th scope="col">Action</th>
                         </tr>
                     </thead>
-
-                    <tbody id="file-list" />                       
+                    <tbody id="file-list"></tbody>
                 </table>
             </div>
-
-            <p id="status-message" class="status-message" role="status" aria-live="polite" />
+            <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
         </section>
     </main>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="/app.js"></script>
 </body>
 </html>
+

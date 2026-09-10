@@ -2,7 +2,6 @@
 
 namespace TestProject.Services;
 
-// Defines what the service can do without defining how.
 public interface IFileSystemService
 {
     BrowseResponse Browse(string? path);
@@ -11,7 +10,7 @@ public interface IFileSystemService
     Task<FileSystemItem> UploadAsync(
         string? path, 
         string fileName, 
-        Stream content,
-        CancellationToken cancellationToken
+        Stream content
     );
+    void Delete(string path);
 }
