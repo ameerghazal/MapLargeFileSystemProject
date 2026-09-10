@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using TestProject.Models;
+using TestProject.Options;
 using TestProject.Services;
 
 namespace TestProject.Controllers;
@@ -11,19 +13,24 @@ public class FileController : ControllerBase
     // Service instance.
     private readonly IFileSystemService _fileSystemService;
     private readonly ILogger<FileController> _logger;
-    private const long MaxUploadSize = 25 * 1024 * 1024; // 25 MB
+    private readonly IOptions<FileBrowserOptions> _options;
 
-    // Constructor.
     public FileController(
         IFileSystemService fileSystemService,
-        ILogger<FileController> logger)
+        ILogger<FileController> logger,
+        IOptions<FileBrowserOptions> options)
     {
         _fileSystemService = fileSystemService;
         _logger = logger;
+        _options = options;
     }
 
-    // Browsing endpoint.
-    [HttpGet("Browse")] // api/files/browse
+    [HttpGet("Settings")]
+    public FileBrowserSettings Settings() => new(
+        _options.Value.MaximumUploadSizeInBytes,
+        _options.Value.MaximumSearchResults);
+
+    [HttpGet("Browse")]
     public ActionResult<BrowseResponse> Browse(
         [FromQuery] string? path = null) // from query tells .NET to read path from URL query string.
     {
@@ -53,15 +60,10 @@ public class FileController : ControllerBase
         }
     }
 
-    [HttpGet("Search")] // api/files/search
+    [HttpGet("Search")]
     public ActionResult<SearchResponse> Search(
         [FromQuery] string? path, [FromQuery] string? query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return BadRequest(new { error = "Query cannot be empty." });
-        }
-
         try
         {
             var response = _fileSystemService.Search(path, query);
@@ -86,7 +88,7 @@ public class FileController : ControllerBase
         }
     }
 
-    [HttpGet("Download")] // api/files/download
+    [HttpGet("Download")]
     public IActionResult Download([FromQuery] string path)
     {
         try
@@ -113,27 +115,25 @@ public class FileController : ControllerBase
         }
     }
 
-    [HttpPost("Upload")] // api/files/upload
-    [RequestSizeLimit(MaxUploadSize)]
+    [HttpPost("Upload")]
     public async Task<ActionResult<FileSystemItem>> Upload(
         [FromQuery] string? path, 
-        [FromForm] IFormFile? file,
-        CancellationToken cancellationToken)
+        [FromForm] IFormFile? file)
     {
         if (file == null || file.Length == 0)
         {
             return BadRequest(new { error = "No file was uploaded." });
         }
 
-        if (file.Length > MaxUploadSize)
+        if (file.Length > _options.Value.MaximumUploadSizeInBytes)
         {
-            return BadRequest(new { error = $"File size exceeds the maximum limit of {MaxUploadSize / (1024 * 1024)} MB." });
+            return BadRequest(new { error = $"File size exceeds the maximum limit of {_options.Value.MaximumUploadSizeInBytes / (1024 * 1024)} MB." });
         }
 
         try
         {
             await using var stream = file.OpenReadStream();
-            var uploadedFile = await _fileSystemService.UploadAsync(path, file.FileName, stream, cancellationToken);
+            var uploadedFile = await _fileSystemService.UploadAsync(path, file.FileName, stream);
             var downloadUrl = $"/api/files/download?path={Uri.EscapeDataString(uploadedFile.Path)}";
             return Created(downloadUrl, uploadedFile);
         }

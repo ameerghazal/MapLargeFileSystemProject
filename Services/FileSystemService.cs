@@ -5,68 +5,24 @@ using TestProject.Options;
 
 namespace TestProject.Services;
 
-public sealed class FileSystemService : IFileSystemService
+public sealed class FileSystemService(
+    FilePathResolve paths,
+    IOptions<FileBrowserOptions> options,
+    ILogger<FileSystemService> logger) : IFileSystemService
 {
-    private readonly string _rootPath;
-    private readonly StringComparison _pathComparison;
-    private const int MaxSearchResults = 500;
-
-    public FileSystemService(
-        IOptions<FileBrowserOptions> options,
-        IWebHostEnvironment env)
-    {
-        // List of rootpath, etc.
-        var settings = options.Value;
-
-        // Set the casing straight.
-        _pathComparison = OperatingSystem.IsWindows() ?
-            StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-
-        // Set the path. If rooted, return; else, create the rooted path with the env variable.
-        _rootPath = Path.GetFullPath(
-            Path.IsPathRooted(settings.RootPath)
-            ? settings.RootPath : Path.Combine(env.ContentRootPath, settings.RootPath)
-            );
-
-        // If the root does not exist, dir created.
-        Directory.CreateDirectory(_rootPath);
-
-    
-    }
+    private readonly FileBrowserOptions _settings = options.Value;
 
     public BrowseResponse Browse(string? path)
     {
-        var fullPath = ResolvePath(path);
+        var directory = GetDirectory(path);
 
-        if (!Directory.Exists(fullPath))
-        {
-            throw new DirectoryNotFoundException(
-                "Directory does not exist."
-            );
-        }
-
-        var directory = new DirectoryInfo(fullPath);
-
-        var folders = directory
-            .EnumerateDirectories()
-            .Where(folder => !IsReparsePoint(folder))
-            .Select(ToFileSystemItem);
-
-        var files = directory
-            .EnumerateFiles()
-            .Select(ToFileSystemItem);
-
-        var items = folders
-            .Concat(files)
-            .OrderBy(item => item.IsDirectory ? 0 : 1)
-            .ThenBy(
-                item => item.Name,
-                StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+        var items = SortItems(directory.EnumerateFileSystemInfos()
+            .Where(entry => !FilePathResolve.IsReparsePoint(entry))
+            .Select(ToFileSystemItem));
 
         return new BrowseResponse(
-            Path: ToRelativePath(fullPath),
-            ParentPath: GetParentPath(fullPath),
+            Path: paths.ToRelativePath(directory.FullName),
+            ParentPath: paths.GetParentPath(directory.FullName),
             Items: items,
             Summary: BuildSummary(items)
         );
@@ -74,23 +30,10 @@ public sealed class FileSystemService : IFileSystemService
 
     public SearchResponse Search(string? path, string query)
     {
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            throw new ArgumentException(
-                "Search query is required.",
-                nameof(query)
-            );
-        }
-
+        if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("A search query is required.", nameof(query));
+       
+        var directory = GetDirectory(path);
         var searchQuery = query.Trim();
-        var fullPath = ResolvePath(path);
-
-        if (!Directory.Exists(fullPath))
-        {
-            throw new DirectoryNotFoundException(
-                "Directory does not exist."
-            );
-        }
 
         var options = new EnumerationOptions
         {
@@ -100,23 +43,21 @@ public sealed class FileSystemService : IFileSystemService
             AttributesToSkip = FileAttributes.ReparsePoint // don't follow symbolic links
         };
 
-        var matches = new DirectoryInfo(fullPath)
+        var matches = directory
             .EnumerateFileSystemInfos("*", options)
             .Where(entry => entry.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
-            .Take(MaxSearchResults + 1)
+            .Take(_settings.MaximumSearchResults + 1)
+            .ToArray();
+
+        var isTruncated = matches.Length > _settings.MaximumSearchResults; // take 501 to see if we are greater than max of 500.
+
+        var items = SortItems(matches
+            .Take(_settings.MaximumSearchResults)
             .Select(ToFileSystemItem)
-            .ToArray();
-
-        var isTruncated = matches.Length > MaxSearchResults; // take 501 to see if we are greater than max of 500.
-
-        var items = matches
-            .Take(MaxSearchResults)
-            .OrderByDescending(item => item.IsDirectory)
-            .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
+         );
 
         return new SearchResponse(
-            Path: ToRelativePath(fullPath),
+            Path: paths.ToRelativePath(directory.FullName),
             Query: searchQuery,
             Items: items,
             Summary: BuildSummary(items),
@@ -127,24 +68,12 @@ public sealed class FileSystemService : IFileSystemService
 
     public FileDownload Download(string path)
     {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            throw new ArgumentException(
-                "Path is required.",
-                nameof(path)
-            );
-        }
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("A file path is required.", nameof(path));
 
-        var fullPath = ResolvePath(path);
+        var fullPath = paths.ResolvePath(path);
 
-        if (!File.Exists(fullPath))
-        {
-            throw new FileNotFoundException(
-                "File does not exist.",
-                fullPath
-            );
-        }
-
+        if (!File.Exists(fullPath)) throw new FileNotFoundException("The file does not exist.");
+        
         var stream = new FileStream(
             fullPath,
             FileMode.Open,
@@ -162,46 +91,26 @@ public sealed class FileSystemService : IFileSystemService
     }
 
     public async Task<FileSystemItem> UploadAsync(
-        string? path, string fileName, Stream content, CancellationToken cancellationToken)
+        string? path, string fileName, Stream content)
     {
-        var directoryPath = ResolvePath(path);
+        var directory = GetDirectory(path);
+        var cleanFileName = Path.GetFileName(
+                fileName.Replace('\\', '/')
+        );
 
-        if(!Directory.Exists(directoryPath))
-        {
-            throw new DirectoryNotFoundException(
-                "Destination directory does not exist."
-            );
-        }
+        if (string.IsNullOrWhiteSpace(cleanFileName) || cleanFileName is "." or "..")
+            throw new ArgumentException("The filename is invalid.", nameof(fileName));
 
-        var cleanFileName = Path.GetFileName(fileName);
+        if (cleanFileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) 
+            throw new ArgumentException("File name contains invalid characters.", nameof(fileName));
         
-        if (string.IsNullOrWhiteSpace(cleanFileName))
-        {
-            throw new ArgumentException(
-                "Invalid file name.",
-                nameof(fileName)
-            );
-        }
+        var destinationPath = paths.ResolvePath(Path.Combine(paths.ToRelativePath(directory.FullName), cleanFileName));
 
-        if (cleanFileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-        {
-            throw new ArgumentException(
-                "File name contains invalid characters.",
-                nameof(fileName)
-            );
-        }
-
-        var destinationPath = Path.Combine(directoryPath, cleanFileName);
-
-        if (File.Exists(destinationPath))
-        {
-            throw new IOException(
-                "A file with the same name already exists."
-            );
-        }
-
+        if (File.Exists(destinationPath) || Directory.Exists(destinationPath))
+            throw new IOException("An item with the same name already exists.");
+        
         var fileCreated = false;
-        
+
         try
         {
             await using var destinationStream = new FileStream(
@@ -215,142 +124,60 @@ public sealed class FileSystemService : IFileSystemService
 
             fileCreated = true;
 
-            await content.CopyToAsync(destinationStream, cancellationToken);
-        } catch
+            await content.CopyToAsync(destinationStream);
+        }
+        catch (IOException) when (
+            !fileCreated && (File.Exists(destinationPath) || Directory.Exists(destinationPath)))
         {
-            if (!fileCreated && File.Exists(destinationPath))
-            {
-                throw new IOException(
-                    "A file with the same name already exists."
-                );
-            }
-
+            throw new IOException("An item with the same name already exists.");
+        }
+        catch
+        {
             if (fileCreated && File.Exists(destinationPath))
             {
-                File.Delete(destinationPath);
+                try
+                {
+                    File.Delete(destinationPath);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to delete the file after an error occurred during upload.");
+                }
             }
 
             throw;
         }
-
-        return ToFileSystemItem(new FileInfo(destinationPath));
-
-    }
         
-    private string ResolvePath(string? relativePath)
-    {
-        var cleanedPath = (relativePath ?? string.Empty)
-            .Replace('/', Path.DirectorySeparatorChar)
-            .Replace('\\', Path.DirectorySeparatorChar);
-
-        // Guard clause.
-        if (Path.IsPathRooted(cleanedPath))
-        {
-            throw new UnauthorizedAccessException(
-                "Absolute paths are not allowed.");
-        }
-
-        var fullPath = Path.GetFullPath(
-            Path.Combine(_rootPath, cleanedPath)
-            );
-
-        var isRoot = string.Equals(fullPath, _rootPath, _pathComparison);
-
-        var isInsideRoot = fullPath.StartsWith(
-            _rootPath + Path.DirectorySeparatorChar,
-            _pathComparison
-            );
-
-        if (!isRoot && !isInsideRoot)
-        {
-            throw new UnauthorizedAccessException(
-                "The requested path is outside the directory."
-            );
-        }
-
-        EnsureExisitingSegmentsAreNotLinks(fullPath);
-
-        return fullPath;
+        return ToFileSystemItem(new FileInfo(destinationPath));
     }
 
-    private void EnsureExisitingSegmentsAreNotLinks(string candidatePath)
+    private DirectoryInfo GetDirectory(string? path)
     {
-        var relativePath = Path.GetRelativePath(
-            _rootPath,
-            candidatePath
-         );
-
-        if (relativePath == ".") return;
-
-        var currentPath = _rootPath;
-        var segments = relativePath.Split(
-            Path.DirectorySeparatorChar,
-            StringSplitOptions.RemoveEmptyEntries
-         );
-
-        foreach (var segment in segments)
+        var fullPath = paths.ResolvePath(path);
+        if (!Directory.Exists(fullPath))
         {
-            currentPath = Path.Combine(currentPath, segment);
-
-            if (!File.Exists(currentPath) && !Directory.Exists(currentPath)) break;
-
-            var attributes = File.GetAttributes(currentPath);
-
-            // TODO: What is this.
-            if ((attributes & FileAttributes.ReparsePoint) != 0)
-            {
-                throw new UnauthorizedAccessException(
-                    "No symbolic links allowed."
-                );
-            }
+            throw new DirectoryNotFoundException(
+                "Directory does not exist."
+            );
         }
+        return new DirectoryInfo(fullPath);
     }
 
-    private FileSystemItem ToFileSystemItem(FileSystemInfo item)
-    {
-        // Converts to a directory or file item, relative to its type. Both directory and fileInfo inherit from fileSystemInfo.
-        return new FileSystemItem(
+    // Converts to a directory or file item, relative to its type. Both directory and fileInfo inherit from fileSystemInfo.
+    private FileSystemItem ToFileSystemItem(FileSystemInfo item) => new(
             Name: item.Name,
-            Path: ToRelativePath(item.FullName),
+            Path: paths.ToRelativePath(item.FullName),
             IsDirectory: item is DirectoryInfo,
             Size: item is FileInfo file ? file.Length : null,
             LastModifiedUtc: item.LastWriteTimeUtc
-        );
-    }
-
-    private string ToRelativePath(string fullPath)
-    {
-        var relativePath = Path.GetRelativePath(_rootPath, fullPath);
-
-        if (relativePath == ".") return string.Empty;
-
-        return relativePath.Replace(Path.DirectorySeparatorChar, '/');
-    }
-
-    private string? GetParentPath(string fullPath)
-    {
-        if (string.Equals(fullPath, _rootPath, _pathComparison)) return null;
-
-        var parentDir = Directory.GetParent(fullPath);
-
-        return parentDir is null ? null : ToRelativePath(parentDir.FullName);
-    }
-
-    private static ViewSummary BuildSummary(
-        IReadOnlyCollection<FileSystemItem> items)
-    {
-        var fileCount = items.Count(item => !item.IsDirectory);
-        var folderCount = items.Count(item => item.IsDirectory);
-        var totalFileSize = items.Where(item => !item.IsDirectory).Sum(item => item.Size ?? 0);
-        return new ViewSummary(
-            FileCount: fileCount,
-            FolderCount: folderCount,
-            TotalFileSize: totalFileSize
-        );
-    }
-
-    private static bool IsReparsePoint(FileSystemInfo item)
-    {
-        return (item.Attributes & FileAttributes.ReparsePoint) != 0;
-    }
+    );
+    private static FileSystemItem[] SortItems(IEnumerable<FileSystemItem> items) => items
+    .OrderByDescending(item => item.IsDirectory)
+    .ThenBy(item => item.Name, StringComparer.OrdinalIgnoreCase)
+    .ThenBy(item => item.Path, StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+    private static ViewSummary BuildSummary(IReadOnlyCollection<FileSystemItem> items) => new(
+        items.Count(item => !item.IsDirectory),
+        items.Count(item => item.IsDirectory),
+        items.Where(item => !item.IsDirectory).Sum(item => item.Size ?? 0));
 }

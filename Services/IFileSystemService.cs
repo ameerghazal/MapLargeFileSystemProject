@@ -11,7 +11,6 @@ public interface IFileSystemService
     Task<FileSystemItem> UploadAsync(
         string? path, 
         string fileName, 
-        Stream content,
-        CancellationToken cancellationToken
+        Stream content
     );
 }

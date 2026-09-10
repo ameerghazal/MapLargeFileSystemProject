@@ -1,16 +1,16 @@
 {
-  "name": "testproject",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "eslint": "^10.10.0",
-    "typescript": "^7.0.2"
-  }
+    "name": "maplarge-file-browser",
+    "version": "1.0.0",
+    "main": "index.js",
+    "description": "ASP.NET Core and vanilla TypeScript file browser",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "eslint": "^10.10.0",
+        "typescript": "^7.0.2"
+    }
 }
