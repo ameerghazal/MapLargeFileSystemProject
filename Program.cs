@@ -15,7 +15,7 @@ public class Program {
                 options.RootPath),
                 "FileBrowser:RootPath is required.")
             .Validate(settings => settings.MaximumUploadSizeInBytes > 0 &&
-                settings.MaximumUploadSizeInBytes <= long.MaxValue - 1024 * 1024,
+                settings.MaximumUploadSizeInBytes <= long.MaxValue - 1000 * 1000,
                 "MaximumUploadSizeInBytes must be positive and leave room for request overhead.")
             .Validate(settings => settings.MaximumSearchResults > 0 &&
                 settings.MaximumSearchResults < int.MaxValue,

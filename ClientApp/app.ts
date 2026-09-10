@@ -19,7 +19,6 @@ async function loadCurrentState(): Promise<void> {
     const { path, query } = getState();
 
     searchInput.value = query;
-    uploadStatus.textContent = ""
     renderLoading(path);
 
     try {
@@ -80,6 +79,20 @@ window.addEventListener("navigation", () => {
 window.addEventListener("popstate", () => {
     void loadCurrentState();
 })
+
+document.addEventListener("click", event => {
+    if (!(event.target instanceof Node)) {
+        return;
+    }
+
+    if (
+        !uploading &&
+        !uploadForm.contains(event.target) &&
+        !uploadStatus.contains(event.target)
+    ) {
+        uploadStatus.textContent = "";
+    }
+});
 
 searchForm.addEventListener("submit", event => {
     event.preventDefault();

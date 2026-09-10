@@ -56,7 +56,7 @@ export function renderResults(response: BrowseResponse | SearchResponse): void {
         return;
     }
 
-    statusMessage.textContent = `Showing ${countMessage}`;
+    statusMessage.textContent = `Showing ${countMessage}.`;
 }
 function createMessageRow(message: string): HTMLTableRowElement {
     const row = document.createElement("tr");

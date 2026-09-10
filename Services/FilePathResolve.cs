@@ -9,7 +9,6 @@ public sealed class FilePathResolve
     private readonly string _rootPath;
     private readonly string _rootPrefix;
     private readonly StringComparison _pathComparison;
-
     public FilePathResolve(IOptions<FileBrowserOptions> options,
         IWebHostEnvironment env)
     {
@@ -36,7 +35,6 @@ public sealed class FilePathResolve
             throw new InvalidOperationException("The configured root cannot be a symbolic link.");
         }
     }
-
     public string ResolvePath(string? relativePath)
     {
         var cleanedPath = (relativePath ?? string.Empty)
@@ -70,14 +68,12 @@ public sealed class FilePathResolve
 
         return fullPath;
     }
-
     public string ToRelativePath(string fullPath)
     {
         var relativePath = Path.GetRelativePath(_rootPath, fullPath);
 
         return relativePath == "." ? string.Empty : relativePath.Replace(Path.DirectorySeparatorChar, '/');
     }
-
     public string? GetParentPath(string fullPath)
     {
         if (string.Equals(fullPath, _rootPath, _pathComparison)) return null;
@@ -86,14 +82,10 @@ public sealed class FilePathResolve
 
         return parentDir is null ? null : ToRelativePath(parentDir.FullName);
     }
-
-    // Checks if the given FileSystemInfo item is a reparse point (symbolic link or junction).
     public static bool IsReparsePoint(FileSystemInfo item) => 
         (item.Attributes & FileAttributes.ReparsePoint) != 0;
     private void EnsureExisitingSegmentsAreNotLinks(string candidatePath)
     {
-        // TODO: Should I add a check for symbolic links here?
-
         var relativePath = Path.GetRelativePath(
             _rootPath,
             candidatePath
@@ -123,6 +115,4 @@ public sealed class FilePathResolve
             }
         }
     }
-
-
 }
