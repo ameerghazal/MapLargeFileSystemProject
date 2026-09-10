@@ -2,7 +2,6 @@
 
 namespace TestProject.Services;
 
-// Defines what the service can do without defining how.
 public interface IFileSystemService
 {
     BrowseResponse Browse(string? path);

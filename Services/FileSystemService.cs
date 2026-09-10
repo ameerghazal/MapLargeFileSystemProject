@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using TestProject.Models;
 using TestProject.Options;
 
@@ -27,10 +26,10 @@ public sealed class FileSystemService(
             Summary: BuildSummary(items)
         );
     }
-
     public SearchResponse Search(string? path, string query)
     {
-        if (string.IsNullOrWhiteSpace(query)) throw new ArgumentException("A search query is required.", nameof(query));
+        if (string.IsNullOrWhiteSpace(query)) 
+            throw new ArgumentException("A search query is required.", nameof(query));
        
         var directory = GetDirectory(path);
         var searchQuery = query.Trim();
@@ -65,14 +64,15 @@ public sealed class FileSystemService(
         );
 
     }
-
     public FileDownload Download(string path)
     {
-        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("A file path is required.", nameof(path));
+        if (string.IsNullOrWhiteSpace(path)) 
+            throw new ArgumentException("A file path is required.", nameof(path));
 
         var fullPath = paths.ResolvePath(path);
 
-        if (!File.Exists(fullPath)) throw new FileNotFoundException("The file does not exist.");
+        if (!File.Exists(fullPath)) 
+            throw new FileNotFoundException("The file does not exist.");
         
         var stream = new FileStream(
             fullPath,
@@ -89,7 +89,6 @@ public sealed class FileSystemService(
             Size: stream.Length
         );
     }
-
     public async Task<FileSystemItem> UploadAsync(
         string? path, string fileName, Stream content)
     {
@@ -150,20 +149,15 @@ public sealed class FileSystemService(
         
         return ToFileSystemItem(new FileInfo(destinationPath));
     }
-
     private DirectoryInfo GetDirectory(string? path)
     {
         var fullPath = paths.ResolvePath(path);
-        if (!Directory.Exists(fullPath))
-        {
-            throw new DirectoryNotFoundException(
-                "Directory does not exist."
-            );
-        }
+        
+        if (!Directory.Exists(fullPath)) 
+            throw new DirectoryNotFoundException("Directory does not exist.");
+        
         return new DirectoryInfo(fullPath);
     }
-
-    // Converts to a directory or file item, relative to its type. Both directory and fileInfo inherit from fileSystemInfo.
     private FileSystemItem ToFileSystemItem(FileSystemInfo item) => new(
             Name: item.Name,
             Path: paths.ToRelativePath(item.FullName),

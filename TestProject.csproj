@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="MockDirectory\Downloads\Map\file.ts" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="wwwroot\index.html" />
   </ItemGroup>
 
@@ -25,6 +29,7 @@
     <TypeScriptCompile Include="ClientApp\view.ts" />
     <TypeScriptCompile Include="ClientApp\helpers.ts" />
     <TypeScriptCompile Include="ClientApp\models.ts" />
+    <TypeScriptCompile Include="MockDirectory\Downloads\Map\file.ts" />
   </ItemGroup>
 
 </Project>

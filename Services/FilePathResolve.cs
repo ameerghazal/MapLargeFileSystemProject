@@ -1,9 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
-using TestProject.Models;
 using TestProject.Options;
 
 namespace TestProject.Services;
-
 public sealed class FilePathResolve
 {
     private readonly string _rootPath;
