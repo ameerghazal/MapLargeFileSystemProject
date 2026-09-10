@@ -38,7 +38,7 @@ async function uploadFile(path, file) {
         navigate(path, "", true);
     }
     catch (error) {
-        window.alert(error instanceof Error ? error.message : "The upload failed.");
+        uploadStatus.textContent = error instanceof Error ? error.message : "The upload failed.";
     }
     finally {
         uploading = false;

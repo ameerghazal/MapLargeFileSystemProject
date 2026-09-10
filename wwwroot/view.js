@@ -7,8 +7,6 @@ function getElement(selector) {
     }
     return element;
 }
-// Future: Could automate this part, just loop over and grab all the ID's, and then hold map of name : querySelector.
-// Probably cleaner, but for the sake of this project, and front-end not being a huge prioirty, decided to take the easy way out.
 const fileList = getElement("#file-list");
 const folderCount = getElement("#folder-count");
 const fileCount = getElement("#file-count");

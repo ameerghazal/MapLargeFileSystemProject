@@ -14,7 +14,6 @@ public class FileController : ControllerBase
     private readonly IFileSystemService _fileSystemService;
     private readonly ILogger<FileController> _logger;
     private readonly IOptions<FileBrowserOptions> _options;
-
     public FileController(
         IFileSystemService fileSystemService,
         ILogger<FileController> logger,
@@ -66,7 +65,7 @@ public class FileController : ControllerBase
     {
         try
         {
-            var response = _fileSystemService.Search(path, query);
+            var response = _fileSystemService.Search(path, query ?? string.Empty);
             return Ok(response);
         }
         catch (UnauthorizedAccessException exception)

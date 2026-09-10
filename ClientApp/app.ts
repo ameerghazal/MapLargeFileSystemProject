@@ -48,9 +48,7 @@ async function uploadFile(path: string, file: File): Promise<void> {
 
         navigate(path, "", true);
     } catch (error: unknown) {
-        window.alert(
-            error instanceof Error ? error.message : "The upload failed."
-        );
+        uploadStatus.textContent = error instanceof Error ? error.message : "The upload failed.";
     } finally {
         uploading = false;
         uploadInput.value = "";

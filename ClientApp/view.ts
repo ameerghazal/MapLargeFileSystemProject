@@ -13,9 +13,6 @@ function getElement<T extends Element>(selector: string): T {
     return element;
 }
 
-// Future: Could automate this part, just loop over and grab all the ID's, and then hold map of name : querySelector.
-// Probably cleaner, but for the sake of this project, and front-end not being a huge prioirty, decided to take the easy way out.
-
 const fileList = getElement<HTMLTableSectionElement>("#file-list");
 const folderCount = getElement<HTMLElement>("#folder-count");
 const fileCount = getElement<HTMLElement>("#file-count");
